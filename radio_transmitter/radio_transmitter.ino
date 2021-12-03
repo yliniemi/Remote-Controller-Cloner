@@ -1,4 +1,4 @@
-int A_ON[] =
+unsigned int A_ON[] =
 {
 572, 2132, 1207, 377, 1132, 426, 1105, 442, 1095, 460, 
 1081, 465, 309, 1219, 326, 1226, 318, 1208, 1096, 469, 
@@ -43,7 +43,7 @@ int A_ON[] =
 };
 
 
-int A_OFF[] =
+unsigned int A_OFF[] =
 {
 546, 2182, 1188, 383, 1136, 430, 1109, 453, 1086, 461, 
 1084, 466, 1080, 472, 1074, 490, 288, 1242, 309, 1222, 
@@ -88,7 +88,7 @@ int A_OFF[] =
 };
 
 
-int B_ON[] =
+unsigned int B_ON[] =
 {
 548, 2157, 1184, 398, 1124, 416, 1114, 442, 1092, 448, 
 1087, 456, 317, 1221, 322, 1218, 1086, 460, 1077, 470, 
@@ -133,7 +133,7 @@ int B_ON[] =
 };
 
 
-int B_OFF[] =
+unsigned int B_OFF[] =
 {
 577, 2143, 1200, 370, 1137, 425, 1110, 445, 1091, 453, 
 1088, 476, 1064, 477, 1067, 476, 1066, 477, 300, 1226, 
@@ -178,7 +178,7 @@ int B_OFF[] =
 };
 
 
-int C_ON[] =
+unsigned int C_ON[] =
 {
 538, 2171, 1180, 401, 1125, 425, 1109, 446, 1093, 452, 
 1087, 469, 1072, 467, 1076, 487, 290, 1227, 321, 1218, 
@@ -223,7 +223,7 @@ int C_ON[] =
 };
 
 
-int C_OFF[] =
+unsigned int C_OFF[] =
 {
 578, 2116, 1204, 382, 1136, 423, 1110, 448, 1088, 451, 
 1089, 461, 311, 1222, 323, 1210, 333, 1215, 1088, 463, 
@@ -268,7 +268,7 @@ int C_OFF[] =
 };
 
 
-int D_ON[] =
+unsigned int D_ON[] =
 {
 579, 2128, 1194, 381, 1138, 422, 1111, 437, 1098, 459, 
 1080, 474, 1066, 465, 1075, 487, 1054, 474, 301, 1229, 
@@ -313,7 +313,7 @@ int D_ON[] =
 };
 
 
-int D_OFF[] =
+unsigned int D_OFF[] =
 {
 575, 2143, 1200, 365, 1140, 422, 1108, 439, 1097, 452, 
 1085, 467, 306, 1224, 322, 1214, 1091, 461, 1078, 472, 
@@ -358,7 +358,7 @@ int D_OFF[] =
 };
 
 
-int ALL_ON[] =
+unsigned int ALL_ON[] =
 {
 578, 2129, 1194, 386, 1134, 424, 1109, 446, 1091, 458, 
 315, 1213, 1094, 474, 300, 1219, 327, 1220, 323, 1207, 
@@ -403,7 +403,7 @@ int ALL_ON[] =
 };
 
 
-int ALL_OFF[] =
+unsigned int ALL_OFF[] =
 {
 584, 2135, 1189, 383, 1137, 423, 1109, 443, 1095, 464, 
 308, 1220, 325, 1209, 333, 1208, 334, 1204, 1098, 461, 
@@ -457,7 +457,7 @@ int statusArray[1024];
 #define PROCESSING_DELAY 2   // this is how much extra microsenconds it takes to process if statement and delay. you could put any random number here since I do previousMicros = previousMicros + array[i] instead of previousMicros = micros()
 #define DELAY_BEFORE_MESSAGE 10000
 
-void sendRaw(int *array, int length)
+void sendRaw(unsigned int *array, int length, int restingState)
 {
   unsigned long int previousMicros = micros();
   unsigned long int newWrite;
@@ -465,7 +465,7 @@ void sendRaw(int *array, int length)
   unsigned long int delayMicros;
   
   // these lines are here to make the timing as precice as possible
-  int pinStatus = 0;
+  int pinStatus = restingState;
   digitalWrite(OUTPUT_PIN, pinStatus);
   newWrite = micros();
   previousWrite = newWrite;
@@ -493,17 +493,27 @@ void sendRaw(int *array, int length)
     //previousMicros = micros();
     previousMicros = previousMicros + array[i];
   }
-  pinStatus = 0;
+  pinStatus = restingState;
   digitalWrite(OUTPUT_PIN, pinStatus);
   delay(20);
   Serial.println("Sent some data over the radio waves");
   int biggestDelta = 0;
+  int biggestDeltaLine = 0;
   for (int i = 2; i < length -1; i++)
   {
-    Serial.println(String("Delay was: ") + delayArray[i] + ", it should have been: " + array[i - 1] + ", error: " + abs(delayArray[i] - array[i - 1]));
-    if (abs(delayArray[i] - array[i - 1]) > biggestDelta) biggestDelta = abs(delayArray[i] - array[i - 1]);
+    Serial.println(String("Line: ") + i + ", Delay was: " + delayArray[i] + ", it should have been: " + array[i - 1] + ", error: " + abs(delayArray[i] - array[i - 1]));
+    if (abs(delayArray[i] - array[i - 1]) > biggestDelta)
+    {
+      biggestDelta = abs(delayArray[i] - array[i - 1]);
+      biggestDeltaLine = i;
+    }
   }
-  Serial.println(String("The biggest timing error was: ") + biggestDelta);
+  Serial.println(String("The biggest timing error was: ") + biggestDelta + " on line " + biggestDeltaLine);
+}
+
+void sendRaw(unsigned int *array, int length)
+{
+  sendRaw(array, length, 0);
 }
 
 void setup()
