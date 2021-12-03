@@ -457,71 +457,91 @@ int statusArray[1024];
 #define PROCESSING_DELAY 2   // this is how much extra microsenconds it takes to process if statement and delay. you could put any random number here since I do previousMicros = previousMicros + array[i] instead of previousMicros = micros()
 #define DELAY_BEFORE_MESSAGE 10000
 
-void sendRaw(unsigned int *array, int length, int restingState)
+
+class Transmitter
 {
-  unsigned long int previousMicros = micros();
-  unsigned long int newWrite;
-  unsigned long int previousWrite;
-  unsigned long int delayMicros;
-  
-  // these lines are here to make the timing as precice as possible
-  int pinStatus = restingState;
-  digitalWrite(OUTPUT_PIN, pinStatus);
-  newWrite = micros();
-  previousWrite = newWrite;
-  delayMicros = previousMicros + DELAY_BEFORE_MESSAGE - micros() - PROCESSING_DELAY;
-  if (delayMicros < 10000000)
+  public:
+  int outputPin;
+  int restingState;
+  Transmitter(int setPin, int setRestingState)
   {
-    delayMicroseconds(delayMicros);
+    outputPin = setPin;
+    restingState = setRestingState;
+    pinMode(outputPin, OUTPUT);
+    digitalWrite(outputPin, restingState);
   }
-  previousMicros = previousMicros + DELAY_BEFORE_MESSAGE;
-  
-  // Now we start sending the actual message
-  for (int i = 0; i < length - 1; i++)
+  /*void Trasmitter(int setPin)
   {
-    pinStatus = !pinStatus;
+    Trasmitter(setPin, 0);
+  }*/
+  void sendRaw(unsigned int *array, int length, int restingState)
+  {
+    unsigned long int previousMicros = micros();
+    unsigned long int newWrite;
+    unsigned long int previousWrite;
+    unsigned long int delayMicros;
+    
+    // these lines are here to make the timing as precice as possible
+    int pinStatus = restingState;
     digitalWrite(OUTPUT_PIN, pinStatus);
     newWrite = micros();
-    delayArray[i] = newWrite - previousWrite;
     previousWrite = newWrite;
-    delayMicros = previousMicros + array[i] - micros() - PROCESSING_DELAY;
+    delayMicros = previousMicros + DELAY_BEFORE_MESSAGE - micros() - PROCESSING_DELAY;
     if (delayMicros < 10000000)
     {
       delayMicroseconds(delayMicros);
     }
-    statusArray[i] = pinStatus;
-    //previousMicros = micros();
-    previousMicros = previousMicros + array[i];
-  }
-  pinStatus = restingState;
-  digitalWrite(OUTPUT_PIN, pinStatus);
-  delay(20);
-  Serial.println("Sent some data over the radio waves");
-  int biggestDelta = 0;
-  int biggestDeltaLine = 0;
-  for (int i = 2; i < length -1; i++)
-  {
-    Serial.println(String("Line: ") + i + ", Delay was: " + delayArray[i] + ", it should have been: " + array[i - 1] + ", error: " + abs(delayArray[i] - array[i - 1]));
-    if (abs(delayArray[i] - array[i - 1]) > biggestDelta)
+    previousMicros = previousMicros + DELAY_BEFORE_MESSAGE;
+    
+    // Now we start sending the actual message
+    for (int i = 0; i < length - 1; i++)
     {
-      biggestDelta = abs(delayArray[i] - array[i - 1]);
-      biggestDeltaLine = i;
+      pinStatus = !pinStatus;
+      digitalWrite(OUTPUT_PIN, pinStatus);
+      newWrite = micros();
+      delayArray[i] = newWrite - previousWrite;
+      previousWrite = newWrite;
+      delayMicros = previousMicros + array[i] - micros() - PROCESSING_DELAY;
+      if (delayMicros < 10000000)
+      {
+        delayMicroseconds(delayMicros);
+      }
+      statusArray[i] = pinStatus;
+      //previousMicros = micros();
+      previousMicros = previousMicros + array[i];
     }
+    pinStatus = restingState;
+    digitalWrite(OUTPUT_PIN, pinStatus);
+    delay(20);
+    Serial.println("Sent some data over the radio waves");
+    int biggestDelta = 0;
+    int biggestDeltaLine = 0;
+    for (int i = 2; i < length -1; i++)
+    {
+      Serial.println(String("Line: ") + i + ", Delay was: " + delayArray[i] + ", it should have been: " + array[i - 1] + ", error: " + abs(delayArray[i] - array[i - 1]));
+      if (abs(delayArray[i] - array[i - 1]) > biggestDelta)
+      {
+        biggestDelta = abs(delayArray[i] - array[i - 1]);
+        biggestDeltaLine = i;
+      }
+    }
+    Serial.println(String("The biggest timing error was: ") + biggestDelta + " on line " + biggestDeltaLine);
   }
-  Serial.println(String("The biggest timing error was: ") + biggestDelta + " on line " + biggestDeltaLine);
-}
+  
+  void sendRaw(unsigned int *array, int length)
+  {
+    sendRaw(array, length, 0);
+  }
+};
 
-void sendRaw(unsigned int *array, int length)
-{
-  sendRaw(array, length, 0);
-}
+Transmitter transmitter(OUTPUT_PIN, 0);
 
 void setup()
 {
   Serial.begin(115200);
   delay(5000);
-  pinMode(OUTPUT_PIN, OUTPUT);
 }
+
 
 void loop()
 {
@@ -534,14 +554,14 @@ void loop()
      if (answer.length() > 0)  answer.remove(answer.length() - 1);
      Serial.println(String("You wrote: ") + answer);
   }
-  if (answer.equals("A_ON")) sendRaw(A_ON, SIGNAL_LENGTH);
-  if (answer.equals("A_OFF")) sendRaw(A_OFF, SIGNAL_LENGTH);
-  if (answer.equals("B_ON")) sendRaw(B_ON, SIGNAL_LENGTH);
-  if (answer.equals("B_OFF")) sendRaw(B_OFF, SIGNAL_LENGTH);
-  if (answer.equals("C_ON")) sendRaw(C_ON, SIGNAL_LENGTH);
-  if (answer.equals("C_OFF")) sendRaw(C_OFF, SIGNAL_LENGTH);
-  if (answer.equals("D_ON")) sendRaw(D_ON, SIGNAL_LENGTH);
-  if (answer.equals("D_OFF")) sendRaw(D_OFF, SIGNAL_LENGTH);
-  if (answer.equals("ALL_ON")) sendRaw(ALL_ON, SIGNAL_LENGTH);
-  if (answer.equals("ALL_OFF")) sendRaw(ALL_OFF, SIGNAL_LENGTH);
+  if (answer.equals("A_ON")) transmitter.sendRaw(A_ON, SIGNAL_LENGTH);
+  if (answer.equals("A_OFF")) transmitter.sendRaw(A_OFF, SIGNAL_LENGTH);
+  if (answer.equals("B_ON")) transmitter.sendRaw(B_ON, SIGNAL_LENGTH);
+  if (answer.equals("B_OFF")) transmitter.sendRaw(B_OFF, SIGNAL_LENGTH);
+  if (answer.equals("C_ON")) transmitter.sendRaw(C_ON, SIGNAL_LENGTH);
+  if (answer.equals("C_OFF")) transmitter.sendRaw(C_OFF, SIGNAL_LENGTH);
+  if (answer.equals("D_ON")) transmitter.sendRaw(D_ON, SIGNAL_LENGTH);
+  if (answer.equals("D_OFF")) transmitter.sendRaw(D_OFF, SIGNAL_LENGTH);
+  if (answer.equals("ALL_ON")) transmitter.sendRaw(ALL_ON, SIGNAL_LENGTH);
+  if (answer.equals("ALL_OFF")) transmitter.sendRaw(ALL_OFF, SIGNAL_LENGTH);
 }
