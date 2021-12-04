@@ -447,6 +447,7 @@ unsigned int ALL_OFF[] =
 958, 590, 442, 1103, 443, 1107, 951, 592, 440
 };
 
+#include "transmitter.h"
 
 int delayArray[1024];
 int statusArray[1024];
@@ -454,85 +455,7 @@ int statusArray[1024];
 #define SIGNAL_LENGTH 400
 #define INPUT_PIN 15
 #define OUTPUT_PIN 13
-#define PROCESSING_DELAY 2   // this is how much extra microsenconds it takes to process if statement and delay. you could put any random number here since I do previousMicros = previousMicros + array[i] instead of previousMicros = micros()
-#define DELAY_BEFORE_MESSAGE 10000
 
-
-class Transmitter
-{
-  public:
-  int outputPin;
-  int restingState;
-  Transmitter(int setPin, int setRestingState)
-  {
-    outputPin = setPin;
-    restingState = setRestingState;
-    pinMode(outputPin, OUTPUT);
-    digitalWrite(outputPin, restingState);
-  }
-  /*void Trasmitter(int setPin)
-  {
-    Trasmitter(setPin, 0);
-  }*/
-  void sendRaw(unsigned int *array, int length, int restingState)
-  {
-    unsigned long int previousMicros = micros();
-    unsigned long int newWrite;
-    unsigned long int previousWrite;
-    unsigned long int delayMicros;
-    
-    // these lines are here to make the timing as precice as possible
-    int pinStatus = restingState;
-    digitalWrite(OUTPUT_PIN, pinStatus);
-    newWrite = micros();
-    previousWrite = newWrite;
-    delayMicros = previousMicros + DELAY_BEFORE_MESSAGE - micros() - PROCESSING_DELAY;
-    if (delayMicros < 10000000)
-    {
-      delayMicroseconds(delayMicros);
-    }
-    previousMicros = previousMicros + DELAY_BEFORE_MESSAGE;
-    
-    // Now we start sending the actual message
-    for (int i = 0; i < length - 1; i++)
-    {
-      pinStatus = !pinStatus;
-      digitalWrite(OUTPUT_PIN, pinStatus);
-      newWrite = micros();
-      delayArray[i] = newWrite - previousWrite;
-      previousWrite = newWrite;
-      delayMicros = previousMicros + array[i] - micros() - PROCESSING_DELAY;
-      if (delayMicros < 10000000)
-      {
-        delayMicroseconds(delayMicros);
-      }
-      statusArray[i] = pinStatus;
-      //previousMicros = micros();
-      previousMicros = previousMicros + array[i];
-    }
-    pinStatus = restingState;
-    digitalWrite(OUTPUT_PIN, pinStatus);
-    delay(20);
-    Serial.println("Sent some data over the radio waves");
-    int biggestDelta = 0;
-    int biggestDeltaLine = 0;
-    for (int i = 2; i < length -1; i++)
-    {
-      Serial.println(String("Line: ") + i + ", Delay was: " + delayArray[i] + ", it should have been: " + array[i - 1] + ", error: " + abs(delayArray[i] - array[i - 1]));
-      if (abs(delayArray[i] - array[i - 1]) > biggestDelta)
-      {
-        biggestDelta = abs(delayArray[i] - array[i - 1]);
-        biggestDeltaLine = i;
-      }
-    }
-    Serial.println(String("The biggest timing error was: ") + biggestDelta + " on line " + biggestDeltaLine);
-  }
-  
-  void sendRaw(unsigned int *array, int length)
-  {
-    sendRaw(array, length, 0);
-  }
-};
 
 Transmitter transmitter(OUTPUT_PIN, 0);
 
