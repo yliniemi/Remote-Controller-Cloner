@@ -22,8 +22,8 @@ void Transmitter::sendRaw(unsigned int *array, int length)
   unsigned long int previousWrite;
   unsigned long int delayMicros;
 
-  unsigned int delayArray[1024];
-  unsigned int statusArray[1024];
+  int delayArray[1024];
+  int statusArray[1024];
   
   // these lines are here to make the timing as precice as possible
   int pinStatus = restingState;

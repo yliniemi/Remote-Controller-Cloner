@@ -459,9 +459,11 @@ int statusArray[1024];
 
 Transmitter transmitter(OUTPUT_PIN, 0);
 
+
 void setup()
 {
   Serial.begin(115200);
+  Serial.println("Bootin");
   delay(5000);
 }
 
