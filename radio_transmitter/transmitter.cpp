@@ -57,12 +57,12 @@ void Transmitter::sendRaw(unsigned int *array, int length)
   pinStatus = restingState;
   digitalWrite(outputPin, pinStatus);
   delay(20);
-  Serial.println("Sent some data over the radio waves");
+  // Serial.println("Sent some data over the radio waves");
   int biggestDelta = 0;
   int biggestDeltaLine = 0;
   for (int i = 2; i < length -1; i++)
   {
-    Serial.println(String("Line: ") + i + ", Delay was: " + delayArray[i] + ", it should have been: " + array[i - 1] + ", error: " + abs(delayArray[i] - array[i - 1]));
+    // Serial.println(String("Line: ") + i + ", Delay was: " + delayArray[i] + ", it should have been: " + array[i - 1] + ", error: " + abs(delayArray[i] - array[i - 1]));
     if (abs(delayArray[i] - array[i - 1]) > biggestDelta)
     {
       biggestDelta = abs(delayArray[i] - array[i - 1]);
