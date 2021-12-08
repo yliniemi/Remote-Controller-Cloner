@@ -12,7 +12,7 @@ class Transmitter
   
   Transmitter(int setPin);
   
-  void sendRaw(unsigned int *array, int length);
+  void sendRaw(const std::vector<unsigned int> timings);
 };
 
 #endif

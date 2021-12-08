@@ -1,4 +1,4 @@
-unsigned int A_ON[] =
+const std::vector<unsigned int> A_ON
 {
 572, 2132, 1207, 377, 1132, 426, 1105, 442, 1095, 460, 
 1081, 465, 309, 1219, 326, 1226, 318, 1208, 1096, 469, 
@@ -43,7 +43,7 @@ unsigned int A_ON[] =
 };
 
 
-unsigned int A_OFF[] =
+const std::vector<unsigned int> A_OFF
 {
 546, 2182, 1188, 383, 1136, 430, 1109, 453, 1086, 461, 
 1084, 466, 1080, 472, 1074, 490, 288, 1242, 309, 1222, 
@@ -88,7 +88,7 @@ unsigned int A_OFF[] =
 };
 
 
-unsigned int B_ON[] =
+const std::vector<unsigned int> B_ON
 {
 548, 2157, 1184, 398, 1124, 416, 1114, 442, 1092, 448, 
 1087, 456, 317, 1221, 322, 1218, 1086, 460, 1077, 470, 
@@ -133,7 +133,7 @@ unsigned int B_ON[] =
 };
 
 
-unsigned int B_OFF[] =
+const std::vector<unsigned int> B_OFF
 {
 577, 2143, 1200, 370, 1137, 425, 1110, 445, 1091, 453, 
 1088, 476, 1064, 477, 1067, 476, 1066, 477, 300, 1226, 
@@ -178,7 +178,7 @@ unsigned int B_OFF[] =
 };
 
 
-unsigned int C_ON[] =
+const std::vector<unsigned int> C_ON
 {
 538, 2171, 1180, 401, 1125, 425, 1109, 446, 1093, 452, 
 1087, 469, 1072, 467, 1076, 487, 290, 1227, 321, 1218, 
@@ -223,7 +223,7 @@ unsigned int C_ON[] =
 };
 
 
-unsigned int C_OFF[] =
+const std::vector<unsigned int> C_OFF
 {
 578, 2116, 1204, 382, 1136, 423, 1110, 448, 1088, 451, 
 1089, 461, 311, 1222, 323, 1210, 333, 1215, 1088, 463, 
@@ -268,7 +268,7 @@ unsigned int C_OFF[] =
 };
 
 
-unsigned int D_ON[] =
+const std::vector<unsigned int> D_ON
 {
 579, 2128, 1194, 381, 1138, 422, 1111, 437, 1098, 459, 
 1080, 474, 1066, 465, 1075, 487, 1054, 474, 301, 1229, 
@@ -313,7 +313,7 @@ unsigned int D_ON[] =
 };
 
 
-unsigned int D_OFF[] =
+const std::vector<unsigned int> D_OFF
 {
 575, 2143, 1200, 365, 1140, 422, 1108, 439, 1097, 452, 
 1085, 467, 306, 1224, 322, 1214, 1091, 461, 1078, 472, 
@@ -358,7 +358,7 @@ unsigned int D_OFF[] =
 };
 
 
-unsigned int ALL_ON[] =
+const std::vector<unsigned int> ALL_ON
 {
 578, 2129, 1194, 386, 1134, 424, 1109, 446, 1091, 458, 
 315, 1213, 1094, 474, 300, 1219, 327, 1220, 323, 1207, 
@@ -403,7 +403,7 @@ unsigned int ALL_ON[] =
 };
 
 
-unsigned int ALL_OFF[] =
+const std::vector<unsigned int> ALL_OFF
 {
 584, 2135, 1189, 383, 1137, 423, 1109, 443, 1095, 464, 
 308, 1220, 325, 1209, 333, 1208, 334, 1204, 1098, 461, 
@@ -447,24 +447,222 @@ unsigned int ALL_OFF[] =
 958, 590, 442, 1103, 443, 1107, 951, 592, 440
 };
 
+extern "C" {
+  #include "freertos/FreeRTOS.h"
+  #include "freertos/timers.h"
+}
+
 #include "transmitter.h"
+#include <AsyncMqttClient.h>
+#include <FS.h>
+#include <SPIFFS.h>
+#include <ArduinoJson.h>
+#include <myCredentials.h>
+#include "settings.h"
+#include "setupWifi.h"
 
-int delayArray[1024];
-int statusArray[1024];
-
-#define SIGNAL_LENGTH 400
-#define INPUT_PIN 15
-#define OUTPUT_PIN 13
-
+char primarySsid[64];
+char primaryPsk[64];
+char hostname[64] = HOSTNAME;
+int OTArounds = OTA_ROUNDS;
 
 Transmitter transmitter(OUTPUT_PIN, 0);
 
+AsyncMqttClient mqttClient;
+TimerHandle_t mqttReconnectTimer;
+TimerHandle_t wifiReconnectTimer;
+
+
+void connectToMqtt() {
+  Serial.println("Connecting to MQTT...");
+  mqttClient.connect();
+}
+
+void WiFiEvent(WiFiEvent_t event) {
+    Serial.printf("[WiFi-event] event: %d\n", event);
+    switch(event) {
+    case SYSTEM_EVENT_STA_GOT_IP:
+        Serial.println("WiFi connected");
+        Serial.println("IP address: ");
+        Serial.println(WiFi.localIP());
+        connectToMqtt();
+        break;
+    case SYSTEM_EVENT_STA_DISCONNECTED:
+        Serial.println("WiFi lost connection");
+        xTimerStop(mqttReconnectTimer, 0); // ensure we don't reconnect to MQTT while reconnecting to Wi-Fi
+        xTimerStart(wifiReconnectTimer, 0);
+        break;
+    }
+}
+
+void onMqttConnect(bool sessionPresent) {
+  Serial.println("Connected to MQTT.");
+  Serial.print("Session present: ");
+  Serial.println(sessionPresent);
+  uint16_t packetIdSub = mqttClient.subscribe("test/lol", 2);
+  Serial.print("Subscribing at QoS 2, packetId: ");
+  Serial.println(packetIdSub);
+  mqttClient.publish("test/lol", 0, true, "test 1");
+  Serial.println("Publishing at QoS 0");
+  uint16_t packetIdPub1 = mqttClient.publish("test/lol", 1, true, "test 2");
+  Serial.print("Publishing at QoS 1, packetId: ");
+  Serial.println(packetIdPub1);
+  uint16_t packetIdPub2 = mqttClient.publish("test/lol", 2, true, "test 3");
+  Serial.print("Publishing at QoS 2, packetId: ");
+  Serial.println(packetIdPub2);
+
+  mqttClient.subscribe("transmitter/switch001", 2);
+}
+
+void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
+  Serial.println("Disconnected from MQTT.");
+
+  if (WiFi.isConnected()) {
+    xTimerStart(mqttReconnectTimer, 0);
+  }
+}
+
+void onMqttSubscribe(uint16_t packetId, uint8_t qos) {
+  Serial.println("Subscribe acknowledged.");
+  Serial.print("  packetId: ");
+  Serial.println(packetId);
+  Serial.print("  qos: ");
+  Serial.println(qos);
+}
+
+void onMqttUnsubscribe(uint16_t packetId) {
+  Serial.println("Unsubscribe acknowledged.");
+  Serial.print("  packetId: ");
+  Serial.println(packetId);
+}
+
+void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
+  Serial.println("Publish received.");
+  Serial.print("  topic: ");
+  Serial.println(topic);
+  Serial.print("  qos: ");
+  Serial.println(properties.qos);
+  Serial.print("  dup: ");
+  Serial.println(properties.dup);
+  Serial.print("  retain: ");
+  Serial.println(properties.retain);
+  Serial.print("  len: ");
+  Serial.println(len);
+  Serial.print("  index: ");
+  Serial.println(index);
+  Serial.print("  total: ");
+  Serial.println(total);
+
+  if (String(topic).equals("transmitter/switch001"))
+  {
+    Serial.println("Yay!");
+    if (String(payload).equals("ON")) transmitter.sendRaw(D_ON);
+    if (String(payload).equals("OFF")) transmitter.sendRaw(D_OFF);
+  }
+}
+
+void onMqttPublish(uint16_t packetId) {
+  Serial.println("Publish acknowledged.");
+  Serial.print("  packetId: ");
+  Serial.println(packetId);
+}
+
+
+
+bool loadConfig()
+{
+  //allows serving of files from SPIFFS
+  Serial.println("Mounting FS...");
+  if (!SPIFFS.begin()) {
+    Serial.println("Failed to mount file system");
+    return false;
+  }
+
+  File configFile = SPIFFS.open(CONFIG_FILE_NAME, "r");
+  if (!configFile) {
+    Serial.println("Failed to open config file");
+    return false;
+  }
+
+  if (configFile.size() > 1024) {
+    Serial.println("Config file size is too large");
+    return false;
+  }
+
+  // Allocate the memory pool on the stack.
+  // Use arduinojson.org/assistant to compute the capacity.
+  StaticJsonDocument<1024> jsonBuffer;
+
+  // Deserialize the JSON document
+  DeserializationError error = deserializeJson(jsonBuffer, configFile);
+
+  // Test if parsing succeeds.
+  if (error) {
+    Serial.print(F("deserializeJson() failed: "));
+    Serial.println(error.f_str());
+    return false;
+  }
+
+  // Copy values from the JsonObject to the Config
+  
+  if (jsonBuffer.containsKey("ssid"))
+  {
+    String stringSsid = jsonBuffer["ssid"];
+    stringSsid.toCharArray(primarySsid, 64);
+    Serial.println(String("primarySsid") + " = " + primarySsid);
+  }
+  
+  if (jsonBuffer.containsKey("psk"))
+  {
+    String stringPsk = jsonBuffer["psk"];
+    stringPsk.toCharArray(primaryPsk, 64);
+    Serial.println(String("primaryPsk") + " = " + "********");
+  }
+  
+  if (jsonBuffer.containsKey("hostname"))
+  {
+    String stringPsk = jsonBuffer["hostname"];
+    stringPsk.toCharArray(hostname, 64);
+    Serial.println(String("hostname") + " = " + hostname);
+  }
+  
+  if (jsonBuffer.containsKey("OTArounds"))
+  {
+    OTArounds = jsonBuffer["OTArounds"];
+    Serial.println(String("OTArounds") + " = " + OTArounds);
+  }
+  
+  
+  // We don't need the file anymore
+  
+  configFile.close();
+
+  return true;
+}
 
 void setup()
 {
   Serial.begin(115200);
   Serial.println("Bootin");
-  delay(5000);
+  delay(1000);
+  loadConfig();
+  
+  mqttReconnectTimer = xTimerCreate("mqttTimer", pdMS_TO_TICKS(2000), pdFALSE, (void*)0, reinterpret_cast<TimerCallbackFunction_t>(connectToMqtt));
+  wifiReconnectTimer = xTimerCreate("wifiTimer", pdMS_TO_TICKS(2000), pdFALSE, (void*)0, reinterpret_cast<TimerCallbackFunction_t>(reconnectToWifi));
+
+  WiFi.onEvent(WiFiEvent);
+
+  mqttClient.onConnect(onMqttConnect);
+  mqttClient.onDisconnect(onMqttDisconnect);
+  mqttClient.onSubscribe(onMqttSubscribe);
+  mqttClient.onUnsubscribe(onMqttUnsubscribe);
+  mqttClient.onMessage(onMqttMessage);
+  mqttClient.onPublish(onMqttPublish);
+  mqttClient.setServer(MQTT_HOST, MQTT_PORT);
+
+  
+
+  setupWifi(primarySsid, primaryPsk);
 }
 
 
@@ -479,14 +677,14 @@ void loop()
      if (answer.length() > 0)  answer.remove(answer.length() - 1);
      Serial.println(String("You wrote: ") + answer);
   }
-  if (answer.equals("A_ON")) transmitter.sendRaw(A_ON, SIGNAL_LENGTH);
-  if (answer.equals("A_OFF")) transmitter.sendRaw(A_OFF, SIGNAL_LENGTH);
-  if (answer.equals("B_ON")) transmitter.sendRaw(B_ON, SIGNAL_LENGTH);
-  if (answer.equals("B_OFF")) transmitter.sendRaw(B_OFF, SIGNAL_LENGTH);
-  if (answer.equals("C_ON")) transmitter.sendRaw(C_ON, SIGNAL_LENGTH);
-  if (answer.equals("C_OFF")) transmitter.sendRaw(C_OFF, SIGNAL_LENGTH);
-  if (answer.equals("D_ON")) transmitter.sendRaw(D_ON, SIGNAL_LENGTH);
-  if (answer.equals("D_OFF")) transmitter.sendRaw(D_OFF, SIGNAL_LENGTH);
-  if (answer.equals("ALL_ON")) transmitter.sendRaw(ALL_ON, SIGNAL_LENGTH);
-  if (answer.equals("ALL_OFF")) transmitter.sendRaw(ALL_OFF, SIGNAL_LENGTH);
+  if (answer.equals("A_ON")) transmitter.sendRaw(A_ON);
+  if (answer.equals("A_OFF")) transmitter.sendRaw(A_OFF);
+  if (answer.equals("B_ON")) transmitter.sendRaw(B_ON);
+  if (answer.equals("B_OFF")) transmitter.sendRaw(B_OFF);
+  if (answer.equals("C_ON")) transmitter.sendRaw(C_ON);
+  if (answer.equals("C_OFF")) transmitter.sendRaw(C_OFF);
+  if (answer.equals("D_ON")) transmitter.sendRaw(D_ON);
+  if (answer.equals("D_OFF")) transmitter.sendRaw(D_OFF);
+  if (answer.equals("ALL_ON")) transmitter.sendRaw(ALL_ON);
+  if (answer.equals("ALL_OFF")) transmitter.sendRaw(ALL_OFF);
 }

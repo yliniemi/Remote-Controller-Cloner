@@ -15,15 +15,14 @@ Transmitter::Transmitter(int setPin)
 }
 
 
-void Transmitter::sendRaw(unsigned int *array, int length)
+void Transmitter::sendRaw(const std::vector<unsigned int> timings)
 {
   unsigned long int previousMicros = micros();
   unsigned long int newWrite;
   unsigned long int previousWrite;
   unsigned long int delayMicros;
 
-  int delayArray[1024];
-  int statusArray[1024];
+  std::vector<int> delays;
   
   // these lines are here to make the timing as precice as possible
   int pinStatus = restingState;
@@ -38,31 +37,30 @@ void Transmitter::sendRaw(unsigned int *array, int length)
   previousMicros = previousMicros + delayBeforeMessage;
   
   // Now we start sending the actual message
-  for (int i = 0; i < length - 1; i++)
+  for (auto timing : timings)
   {
     pinStatus = !pinStatus;
     digitalWrite(outputPin, pinStatus);
     newWrite = micros();
-    delayArray[i] = newWrite - previousWrite;
+    delays.push_back(newWrite - previousWrite);
     previousWrite = newWrite;
-    delayMicros = previousMicros + array[i] - micros();
+    delayMicros = previousMicros + timing - micros();
     if (delayMicros < 10000000)
     {
       delayMicroseconds(delayMicros);
     }
-    statusArray[i] = pinStatus;
     //previousMicros = micros();
-    previousMicros = previousMicros + array[i];
+    previousMicros = previousMicros + timing;
   }
   pinStatus = restingState;
   digitalWrite(outputPin, pinStatus);
-  delay(20);
+  delays.push_back(micros() - previousWrite);
+  // delay(20);
   // Serial.println("Sent some data over the radio waves");
   int biggestDelta = 0;
   int biggestDeltaLine = 0;
-  for (int i = 2; i < length -1; i++)
+  /*for (int i = 2; i < length -1; i++)
   {
-    // Serial.println(String("Line: ") + i + ", Delay was: " + delayArray[i] + ", it should have been: " + array[i - 1] + ", error: " + abs(delayArray[i] - array[i - 1]));
     if (abs(delayArray[i] - array[i - 1]) > biggestDelta)
     {
       biggestDelta = abs(delayArray[i] - array[i - 1]);
@@ -70,4 +68,5 @@ void Transmitter::sendRaw(unsigned int *array, int length)
     }
   }
   Serial.println(String("The biggest timing error was: ") + biggestDelta + " on line " + biggestDeltaLine);
+  */
 }
