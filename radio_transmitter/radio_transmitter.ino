@@ -1,4 +1,4 @@
-const std::vector<unsigned int> A_ON
+std::vector<unsigned int> A_ON
 {
 572, 2132, 1207, 377, 1132, 426, 1105, 442, 1095, 460, 
 1081, 465, 309, 1219, 326, 1226, 318, 1208, 1096, 469, 
@@ -43,7 +43,7 @@ const std::vector<unsigned int> A_ON
 };
 
 
-const std::vector<unsigned int> A_OFF
+std::vector<unsigned int> A_OFF
 {
 546, 2182, 1188, 383, 1136, 430, 1109, 453, 1086, 461, 
 1084, 466, 1080, 472, 1074, 490, 288, 1242, 309, 1222, 
@@ -88,7 +88,7 @@ const std::vector<unsigned int> A_OFF
 };
 
 
-const std::vector<unsigned int> B_ON
+std::vector<unsigned int> B_ON
 {
 548, 2157, 1184, 398, 1124, 416, 1114, 442, 1092, 448, 
 1087, 456, 317, 1221, 322, 1218, 1086, 460, 1077, 470, 
@@ -133,7 +133,7 @@ const std::vector<unsigned int> B_ON
 };
 
 
-const std::vector<unsigned int> B_OFF
+std::vector<unsigned int> B_OFF
 {
 577, 2143, 1200, 370, 1137, 425, 1110, 445, 1091, 453, 
 1088, 476, 1064, 477, 1067, 476, 1066, 477, 300, 1226, 
@@ -178,7 +178,7 @@ const std::vector<unsigned int> B_OFF
 };
 
 
-const std::vector<unsigned int> C_ON
+std::vector<unsigned int> C_ON
 {
 538, 2171, 1180, 401, 1125, 425, 1109, 446, 1093, 452, 
 1087, 469, 1072, 467, 1076, 487, 290, 1227, 321, 1218, 
@@ -223,7 +223,7 @@ const std::vector<unsigned int> C_ON
 };
 
 
-const std::vector<unsigned int> C_OFF
+std::vector<unsigned int> C_OFF
 {
 578, 2116, 1204, 382, 1136, 423, 1110, 448, 1088, 451, 
 1089, 461, 311, 1222, 323, 1210, 333, 1215, 1088, 463, 
@@ -268,7 +268,7 @@ const std::vector<unsigned int> C_OFF
 };
 
 
-const std::vector<unsigned int> D_ON
+std::vector<unsigned int> D_ON
 {
 579, 2128, 1194, 381, 1138, 422, 1111, 437, 1098, 459, 
 1080, 474, 1066, 465, 1075, 487, 1054, 474, 301, 1229, 
@@ -313,7 +313,7 @@ const std::vector<unsigned int> D_ON
 };
 
 
-const std::vector<unsigned int> D_OFF
+std::vector<unsigned int> D_OFF
 {
 575, 2143, 1200, 365, 1140, 422, 1108, 439, 1097, 452, 
 1085, 467, 306, 1224, 322, 1214, 1091, 461, 1078, 472, 
@@ -358,7 +358,7 @@ const std::vector<unsigned int> D_OFF
 };
 
 
-const std::vector<unsigned int> ALL_ON
+std::vector<unsigned int> ALL_ON
 {
 578, 2129, 1194, 386, 1134, 424, 1109, 446, 1091, 458, 
 315, 1213, 1094, 474, 300, 1219, 327, 1220, 323, 1207, 
@@ -403,7 +403,7 @@ const std::vector<unsigned int> ALL_ON
 };
 
 
-const std::vector<unsigned int> ALL_OFF
+std::vector<unsigned int> ALL_OFF
 {
 584, 2135, 1189, 383, 1137, 423, 1109, 443, 1095, 464, 
 308, 1220, 325, 1209, 333, 1208, 334, 1204, 1098, 461, 

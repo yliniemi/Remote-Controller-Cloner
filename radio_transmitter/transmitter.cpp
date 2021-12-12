@@ -15,7 +15,7 @@ Transmitter::Transmitter(int setPin)
 }
 
 
-void Transmitter::sendRaw(const std::vector<unsigned int> timings)
+void Transmitter::sendRaw(std::vector<unsigned int> timings)
 {
   unsigned long int previousMicros = micros();
   unsigned long int newWrite;
@@ -69,4 +69,28 @@ void Transmitter::sendRaw(const std::vector<unsigned int> timings)
   }
   Serial.println(String("The biggest timing error was: ") + biggestDelta + " on line " + biggestDeltaLine);
   */
+}
+
+bool Transmitter::bitUint8(uint8_t data, int bit)
+{
+  return (data & (128 >> bit) != 0);
+}
+
+void Transmitter::sendProtocol(Protocol protocol, std::vector<uint8_t> message, unsigned int length, unsigned int repeat)
+{
+  std::vector<unsigned int> rawMessage;
+  rawMessage.insert(rawMessage.end(), protocol.preamble.begin(), protocol.preamble.end());
+
+  int lastBit = 8;
+  for (int i = 0; i < message.size(); i++)
+  {
+    if (i == (message.size() - 1)) lastBit = length;
+    {
+      for (int j = 0; j < lastBit; j++)
+      {
+        if (bitUint8(message[i], j)) rawMessage.insert(rawMessage.end(), protocol.one.begin(), protocol.one.end());
+        else rawMessage.insert(rawMessage.end(), protocol.zero.begin(), protocol.zero.end());
+      }
+    }
+  }
 }
