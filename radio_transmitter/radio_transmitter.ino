@@ -1,5 +1,5 @@
 std::vector<unsigned int> A_ON
-{
+{4000,
 572, 2132, 1207, 377, 1132, 426, 1105, 442, 1095, 460, 
 1081, 465, 309, 1219, 326, 1226, 318, 1208, 1096, 469, 
 303, 1225, 322, 1214, 1091, 463, 311, 1221, 327, 1221, 
@@ -44,7 +44,7 @@ std::vector<unsigned int> A_ON
 
 
 std::vector<unsigned int> A_OFF
-{
+{4000,
 546, 2182, 1188, 383, 1136, 430, 1109, 453, 1086, 461, 
 1084, 466, 1080, 472, 1074, 490, 288, 1242, 309, 1222, 
 1091, 483, 1062, 484, 294, 1235, 317, 1240, 1074, 473, 
@@ -89,7 +89,7 @@ std::vector<unsigned int> A_OFF
 
 
 std::vector<unsigned int> B_ON
-{
+{4000,
 548, 2157, 1184, 398, 1124, 416, 1114, 442, 1092, 448, 
 1087, 456, 317, 1221, 322, 1218, 1086, 460, 1077, 470, 
 303, 1223, 321, 1220, 322, 1218, 324, 1215, 325, 1213, 
@@ -134,7 +134,7 @@ std::vector<unsigned int> B_ON
 
 
 std::vector<unsigned int> B_OFF
-{
+{4000,
 577, 2143, 1200, 370, 1137, 425, 1110, 445, 1091, 453, 
 1088, 476, 1064, 477, 1067, 476, 1066, 477, 300, 1226, 
 321, 1220, 1088, 469, 306, 1228, 1083, 473, 1070, 477, 
@@ -179,7 +179,7 @@ std::vector<unsigned int> B_OFF
 
 
 std::vector<unsigned int> C_ON
-{
+{4000,
 538, 2171, 1180, 401, 1125, 425, 1109, 446, 1093, 452, 
 1087, 469, 1072, 467, 1076, 487, 290, 1227, 321, 1218, 
 1091, 466, 1075, 470, 306, 1233, 316, 1226, 1082, 471, 
@@ -224,7 +224,7 @@ std::vector<unsigned int> C_ON
 
 
 std::vector<unsigned int> C_OFF
-{
+{4000,
 578, 2116, 1204, 382, 1136, 423, 1110, 448, 1088, 451, 
 1089, 461, 311, 1222, 323, 1210, 333, 1215, 1088, 463, 
 310, 1225, 320, 1214, 1092, 461, 312, 1225, 320, 1216, 
@@ -269,7 +269,7 @@ std::vector<unsigned int> C_OFF
 
 
 std::vector<unsigned int> D_ON
-{
+{4000,
 579, 2128, 1194, 381, 1138, 422, 1111, 437, 1098, 459, 
 1080, 474, 1066, 465, 1075, 487, 1054, 474, 301, 1229, 
 316, 1230, 1079, 473, 299, 1226, 1083, 476, 1065, 474, 
@@ -314,7 +314,7 @@ std::vector<unsigned int> D_ON
 
 
 std::vector<unsigned int> D_OFF
-{
+{4000,
 575, 2143, 1200, 365, 1140, 422, 1108, 439, 1097, 452, 
 1085, 467, 306, 1224, 322, 1214, 1091, 461, 1078, 472, 
 304, 1227, 318, 1226, 316, 1221, 322, 1206, 336, 1215, 
@@ -359,7 +359,7 @@ std::vector<unsigned int> D_OFF
 
 
 std::vector<unsigned int> ALL_ON
-{
+{4000,
 578, 2129, 1194, 386, 1134, 424, 1109, 446, 1091, 458, 
 315, 1213, 1094, 474, 300, 1219, 327, 1220, 323, 1207, 
 334, 1214, 329, 1200, 341, 1205, 336, 1209, 332, 1204, 
@@ -404,7 +404,7 @@ std::vector<unsigned int> ALL_ON
 
 
 std::vector<unsigned int> ALL_OFF
-{
+{4000,
 584, 2135, 1189, 383, 1137, 423, 1109, 443, 1095, 464, 
 308, 1220, 325, 1209, 333, 1208, 334, 1204, 1098, 461, 
 313, 1220, 1088, 462, 310, 1234, 313, 1217, 326, 1210, 
@@ -556,8 +556,8 @@ void onMqttMessage(char* topic, char* payload, AsyncMqttClientMessageProperties 
   if (String(topic).equals("transmitter/switch001"))
   {
     Serial.println("Yay!");
-    if (String(payload).equals("ON")) transmitter.sendRaw(D_ON);
-    if (String(payload).equals("OFF")) transmitter.sendRaw(D_OFF);
+    if (String(payload).equals("ON")) transmitter.sendRaw(D_ON,1);
+    if (String(payload).equals("OFF")) transmitter.sendRaw(D_OFF,1);
   }
 }
 
@@ -644,6 +644,10 @@ void setup()
 {
   Serial.begin(115200);
   Serial.println("Bootin");
+  Serial.println(String("0b11111111 & 0b10101010 = ") + (0b11111111 & 0b10101010));
+  Serial.println(String("0b10010101 & 0b01101010 = ") + (0b10010101 & 0b01101010));
+  Serial.println(String("0b00111111 & 0b01000100 = ") + (0b00111111 & 0b01000100));
+  Serial.println(String("0b00111111 & 0b00001000 = ") + (0b00111111 & 0b00001000));
   delay(1000);
   loadConfig();
   
@@ -665,6 +669,17 @@ void setup()
   setupWifi(primarySsid, primaryPsk);
 }
 
+Transmitter::Protocol proto[] = {
+  {std::vector<unsigned int>{0, 2999, 7264}, std::vector<unsigned int>{443, 1098}, std::vector<unsigned int>{968, 590}},
+  {std::vector<unsigned int>{0, 321, 2363}, std::vector<unsigned int>{316, 1226}, std::vector<unsigned int>{1100, 450}}
+};
+
+std::vector<uint8_t> off[] = {
+  {0b11110000, 0b10100000, 0b00010010},
+  {0b11111100, 0b01001011, 0b01100010},
+  {0b11111000, 0b10010011, 0b01010010},
+  {0b11111011, 0b11010111, 0b10100010}
+};
 
 void loop()
 {
@@ -677,14 +692,19 @@ void loop()
      if (answer.length() > 0)  answer.remove(answer.length() - 1);
      Serial.println(String("You wrote: ") + answer);
   }
-  if (answer.equals("A_ON")) transmitter.sendRaw(A_ON);
-  if (answer.equals("A_OFF")) transmitter.sendRaw(A_OFF);
-  if (answer.equals("B_ON")) transmitter.sendRaw(B_ON);
-  if (answer.equals("B_OFF")) transmitter.sendRaw(B_OFF);
-  if (answer.equals("C_ON")) transmitter.sendRaw(C_ON);
-  if (answer.equals("C_OFF")) transmitter.sendRaw(C_OFF);
-  if (answer.equals("D_ON")) transmitter.sendRaw(D_ON);
-  if (answer.equals("D_OFF")) transmitter.sendRaw(D_OFF);
-  if (answer.equals("ALL_ON")) transmitter.sendRaw(ALL_ON);
-  if (answer.equals("ALL_OFF")) transmitter.sendRaw(ALL_OFF);
+  if (answer.equals("A_ON")) transmitter.sendRaw(A_ON,1);
+  if (answer.equals("A_OFF")) transmitter.sendRaw(A_OFF,1);
+  if (answer.equals("B_ON")) transmitter.sendRaw(B_ON,1);
+  if (answer.equals("B_OFF")) transmitter.sendRaw(B_OFF,1);
+  if (answer.equals("C_ON")) transmitter.sendRaw(C_ON,1);
+  if (answer.equals("C_OFF")) transmitter.sendRaw(C_OFF,1);
+  if (answer.equals("D_ON")) transmitter.sendRaw(D_ON,1);
+  if (answer.equals("D_OFF")) transmitter.sendRaw(D_OFF,1);
+  if (answer.equals("ALL_ON")) transmitter.sendRaw(ALL_ON,1);
+  if (answer.equals("ALL_OFF")) transmitter.sendRaw(ALL_OFF,1);
+  // if (answer.equals("test on")) transmitter.sendProtocol(Protocol{std::vector<unsigned int>{2999, 7264}, std::vector<unsigned int>{443, 1098}, std::vector<unsigned int>{968, 590}}, std::vector<uint8_t>{0b11110000, 0b10100000, 0b00010010}, 0, 10);
+  // if (answer.equals("test off")) transmitter.sendProtocol(Protocol{std::vector<unsigned int>{2999, 7264}, std::vector<unsigned int>{443, 1098}, std::vector<unsigned int>{968, 590}}, std::vector<uint8_t>{0b11110100, 0b10100000, 0b00010010}, 0, 10);
+  // if (answer.equals("test2 on")) transmitter.sendProtocol(Protocol{std::vector<unsigned int>{321, 2363}, std::vector<unsigned int>{316, 1226}, std::vector<unsigned int>{1100, 450}}, std::vector<uint8_t>{0b11110000, 0b00000001, 0b10000010}, 0, 10);
+  // if (answer.equals("test2 off")) transmitter.sendProtocol(Protocol{std::vector<unsigned int>{321, 2363}, std::vector<unsigned int>{316, 1226}, std::vector<unsigned int>{1100, 450}}, std::vector<uint8_t>{0b11110100, 0b00000001, 0b10000010}, 0, 10);
+  if (answer.equals("off")) transmitter.sendProtocol(proto[esp_random() % 2], off[esp_random() % 4], 0, 10);
 }
